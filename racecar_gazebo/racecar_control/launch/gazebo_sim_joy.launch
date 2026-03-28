@@ -1,0 +1,13 @@
+<!-- -*- mode: XML -*- -->
+
+<launch>
+
+  <remap from="/ackermann_cmd_mux/input/teleop" to="/racecar/ackermann_cmd_mux/input/teleop"/>
+
+  <include file="$(find racecar_gazebo)/launch/racecar_tunnel.launch"/>   <!-- MAP -->
+
+  <include file="$(find racecar_control)/launch/teleop.launch"/>    <!-- TELEOPERATION -->
+
+  <!-- <node pkg="path_tracker" name="follower" type="follower.py" output="screen"/> -->    <!-- PATH TRACKING ALGORITHM-->
+
+</launch>
