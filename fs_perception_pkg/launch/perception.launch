@@ -1,4 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-    
-<launch>
+    <include file="$(find racecar_gazebo)/launch/racecar.launch">
+        <arg name="world_name" value="racecar_tunnel"/>
+    </include>
+
+    <node pkg="fs_perception_pkg" type="yolo-implementation.py" name="detection_node" output="screen"/>
+
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find fs_perception_pkg)/rviz/perception.rviz" />
+</launch>

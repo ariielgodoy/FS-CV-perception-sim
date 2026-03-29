@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from ultralytics import YOLO
 import rospy
 from cv_bridge import CvBridge
