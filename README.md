@@ -1,4 +1,4 @@
-# Tutorial for using this workspace
+# Tutorial to use this workspace
 1. Create your own workspace in your home directory. Example: mkdir -p ~/catkin_racecar_ws/src
 2. cd ~/catkin_racecar_ws/src
 3. git clone https://github.com/ariielgodoy/FS-CV-perception-sim.git .
