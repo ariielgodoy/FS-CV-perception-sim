@@ -6,6 +6,7 @@ from sensor_msgs.msg import Image
 import numpy as np
 from sensor_msgs.msg import CameraInfo
 import image_geometry
+from geometry_msgs.msg import PointStamped
 
 
 class ConeDetector:
@@ -18,6 +19,7 @@ class ConeDetector:
         self.mask_yolo_depth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depth_operation, queue_size=1, buff_size=2**24)
         self.publish_detection = rospy.Publisher("/yolo/detection/image", Image)
         self.current_boxes = []
+        self.cones_map = []
         self.intrinsic_params = None
         self.camera_info_sub = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.retrieve_camera_info)
 
@@ -36,10 +38,33 @@ class ConeDetector:
         ros_msg = self.bridge.cv2_to_imgmsg(detection_annotated, encoding="bgr8")
         self.publish_detection.publish(ros_msg)
 
-    
-    def transform_into_global_coordinates(self, u1, v1, u2, v2, distance_to_cone):
-        pass
-        #Falta este programa, pero necesito el centro de la bounding box y ya
+
+    def transform_into_global_coordinates(self, relative_cone_position):
+        p = PointStamped()
+        p.header.frame_id = "camera_link_optical"
+        p.header.stamp = rospy.Time(0)
+        p.point.x = relative_cone_position[0]
+        p.point.y = relative_cone_position[1]
+        p.point.z = relative_cone_position[2]
+
+        try:
+            p_global = self.listener.transformPoint("map", p)
+            return p_global.point.x, p_global.point.y
+        except:
+            rospy.logwarn("Aún no puedo calcular la posición global (¿está el coche en el mapa?)")
+            return None
+
+
+    def transform_into_relative_coordinates(self, u1, v1, u2, v2, distance_to_cone):
+        u = (u1 + u2) / 2
+        v = (v1 + v2) / 2
+        cone_center_transformation_vector = self.camera_model.projectPixelTo3dRay((u, v))
+        x_real = cone_center_transformation_vector[0]*distance_to_cone
+        y_real = cone_center_transformation_vector[1]*distance_to_cone
+        z_real = distance_to_cone
+        #Falta comprobar este programa, esto da las coordenadas relativas al robot
+        return x_real, y_real, z_real
+
 
 
     #Funcion para devolver la distancia del cono con la mediana de la medida dentro del bounding box completo
@@ -49,7 +74,6 @@ class ConeDetector:
         
 
         depth_data = self.bridge.imgmsg_to_cv2(depth_data, desired_encoding="passthrough")
-        distances_to_cones_array = []
         for bbox in self.current_boxes:
             x1, y1, x2, y2 = bbox
             roi = depth_data[y1:y2, x1:x2]
@@ -62,11 +86,12 @@ class ConeDetector:
             if valid_points.size > 0:
                 distance_to_cone = np.median(valid_points)
 
-                self.transform_into_global_coordinates(x1, y1, x2, y2, distance_to_cone)
-                distances_to_cones_array.append(distance_to_cone)
-                rospy.loginfo(f"distancia al cono: {distance_to_cone}")
+                relative_cone_position = self.transform_into_relative_coordinates(x1, y1, x2, y2, distance_to_cone)
+                gobal_cone_position = self.transform_into_global_coordinates(relative_cone_position)
+                
             else:
-                distances_to_cones_array.append(None)
+                pass
+            #Aqui debo poner que haga algo
 
         
         

@@ -6,5 +6,8 @@
 
     <node pkg="fs_perception_pkg" type="yolo-implementation.py" name="detection_node" output="screen"/>
 
+    <node pkg="tf" type="static_transform_publisher" name="manual_odom_bridge" args="0 0 0 0 0 0 odom base_link 100" />
+    <!-- Este comando es para unir odom con el base_link, que por defecto no venía unido no se por que -->
+
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find fs_perception_pkg)/rviz/perception.rviz" />
 </launch>
