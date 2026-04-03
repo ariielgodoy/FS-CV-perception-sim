@@ -7,17 +7,19 @@ import numpy as np
 from sensor_msgs.msg import CameraInfo
 import image_geometry
 from geometry_msgs.msg import PointStamped
+import tf
 
 
 class ConeDetector:
     def __init__(self):
-        self.bridge = CvBridge()
-        self.detection_model = YOLO("/home/ariel/catkin_racecar_ws/src/fs_perception_pkg/models/best.pt")
         rospy.init_node("detection_node")
+        self.bridge = CvBridge()
+        self.listener = tf.TransformListener()
+        self.detection_model = YOLO("/home/ariel/catkin_racecar_ws/src/fs_perception_pkg/models/best.pt")
         self.camera_model = image_geometry.PinholeCameraModel()
+        self.publish_detection = rospy.Publisher("/yolo/detection/image", Image)
         self.detect = rospy.Subscriber("/camera/color/image_raw", Image, self.detect_cones, queue_size=1, buff_size=2**24)
         self.mask_yolo_depth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depth_operation, queue_size=1, buff_size=2**24)
-        self.publish_detection = rospy.Publisher("/yolo/detection/image", Image)
         self.current_boxes = []
         self.cones_map = []
         self.intrinsic_params = None
@@ -47,12 +49,13 @@ class ConeDetector:
         p.point.y = relative_cone_position[1]
         p.point.z = relative_cone_position[2]
 
-        try:
-            p_global = self.listener.transformPoint("map", p)
-            return p_global.point.x, p_global.point.y
-        except:
-            rospy.logwarn("Aún no puedo calcular la posición global (¿está el coche en el mapa?)")
-            return None
+        #try:
+        p_global = self.listener.transformPoint("map", p)
+        print("Coordenada global del cono: ", p_global)
+        return p_global.point.x, p_global.point.y
+        #except:
+            #rospy.logwarn("Aún no puedo calcular la posición global (¿está el coche en el mapa?)")
+            #return None
 
 
     def transform_into_relative_coordinates(self, u1, v1, u2, v2, distance_to_cone):
