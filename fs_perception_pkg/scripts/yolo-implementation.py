@@ -8,6 +8,7 @@ from sensor_msgs.msg import CameraInfo
 import image_geometry
 from geometry_msgs.msg import PointStamped
 import tf
+#from map_creation import MapCones
 
 
 class ConeDetector:
@@ -19,7 +20,8 @@ class ConeDetector:
         self.camera_model = image_geometry.PinholeCameraModel()
         self.publish_detection = rospy.Publisher("/yolo/detection/image", Image)
         self.detect = rospy.Subscriber("/camera/color/image_raw", Image, self.detect_cones, queue_size=1, buff_size=2**24)
-        self.mask_yolo_depth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depth_operation, queue_size=1, buff_size=2**24)
+        self.mask_yolo_depth = rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.depth_operation, queue_size=1, buff_size=2**24)
+        #He cambiado para poder ver 
         self.current_boxes = []
         self.cones_map = []
         self.intrinsic_params = None
@@ -34,7 +36,7 @@ class ConeDetector:
 
     def detect_cones(self, image_to_predict):
         cv_image = self.bridge.imgmsg_to_cv2(image_to_predict, desired_encoding="bgr8")
-        detection_result = self.detection_model(cv_image)
+        detection_result = self.detection_model(cv_image, conf=0.47, iou=0.45)
         self.current_boxes = detection_result[0].boxes.xyxy.cpu().numpy().astype(int)
         detection_annotated = detection_result[0].plot(show=False) #Es una lista porque YOLO podria procesar mas de una imagen a la vez
         ros_msg = self.bridge.cv2_to_imgmsg(detection_annotated, encoding="bgr8")
